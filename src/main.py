@@ -1,4 +1,4 @@
-import logging 
+import logging
 
 from extract import fetch_xml, parse_xml
 from load import load_raw

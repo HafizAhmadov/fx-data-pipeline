@@ -5,7 +5,7 @@ import duckdb
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = "/content/drive/MyDrive/fx-data/fx.duckdb"
+DB_PATH = "data/fx.duckdb"
 TABLE = "raw.cbar_rates"
 
 COLUMNS = [
