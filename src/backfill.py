@@ -50,10 +50,7 @@ def backfill(start_date, end_date):
   return failed
   
 
-generate_dates(date(2026,11,1), date.today())
+# generate_dates(date(2023,1,1), date.today())
 
 if __name__ == "__main__":
-  backfill(date(2026, 10, 1), date.today())
-  print("Number of weekdays in this period", len(df))
-  print("First 3:", df[:3])
-  print("Last 3:", df[-3:])
+  backfill(date(2023, 1, 1), date.today())
