@@ -1,9 +1,9 @@
+import logging
+import time
 import xml.etree.ElementTree as ET
 
 import pandas as pd
 import requests
-import logging 
-import time
 
 logger = logging.getLogger(__name__)
 
