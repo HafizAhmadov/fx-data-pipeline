@@ -1,6 +1,7 @@
-from datetime import date 
 import logging
 import time
+from datetime import date
+
 import pandas as pd
 
 from main import run
@@ -27,20 +28,20 @@ def backfill(start_date, end_date):
     logger.info("No dates between %s and %s", start_date, end_date)
     return []
   
-  logging.info("Starting backfilling: %d days from %s to %s!", len(dates), start_date, end_date)
+  logger.info("Starting backfilling: %d days from %s to %s!", len(dates), start_date, end_date)
 
   failed = []
   for i,d in enumerate(dates, start=1):
     try:
       run(d)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001 - keep going if one day fails
       failed.append(d)
-      logging.error("Failed %s: %s", d,e)
-  
-  if i % 50 == 0:
-    logging.info("Progress: %d/%d days", i, len(dates))
+      logger.error("Failed %s: %s", d,e)
 
-  time.sleep(PAUSE_SECONDS)
+    if i % 50 == 0:
+      logger.info("Progress: %d/%d days", i, len(dates))
+
+    time.sleep(PAUSE_SECONDS)
 
   logger.info("Backfill done. Succeeded: %d, failed: %d",
                 len(dates) - len(failed), len(failed))
