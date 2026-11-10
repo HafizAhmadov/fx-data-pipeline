@@ -1,0 +1,12 @@
+name: fx_pipeline
+version: "1.0.0"
+profile: fx_pipeline
+
+model-paths: ["models"]
+
+models:
+  fx_pipeline:
+    staging:
+      +materialized: view
+    marts:
+      +materialized: table
