@@ -221,3 +221,7 @@ __marimo__/
 *.duckdb
 
 temp.py
+
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/

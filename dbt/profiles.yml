@@ -1,0 +1,7 @@
+fx_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../data/fx.duckdb
+      threads: 1
