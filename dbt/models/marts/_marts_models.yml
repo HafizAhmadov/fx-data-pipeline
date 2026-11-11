@@ -19,3 +19,19 @@ models:
       - name: is_active
         data_tests:
           - not_null
+
+  - name: dim_date
+    description: "One row per calendar day from the first CBAR rate date to today, with date parts and whether CBAR published rates that day."
+    columns:
+      - name: date_day
+        data_tests:
+          - not_null
+          - unique
+
+      - name: is_publication_day
+        data_tests:
+          - not_null
+
+      - name: is_weekend
+        data_tests:
+          - not_null
