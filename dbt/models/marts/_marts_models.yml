@@ -35,3 +35,24 @@ models:
       - name: is_weekend
         data_tests:
           - not_null
+
+  - name: fact_exchange_rate
+    description: "One row per currency per CBAR publication date, with rate per unit and change from the previous publication."
+    columns:
+      - name: rate_date
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_date')
+                field: date_day
+      - name: currency_code
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_currency')
+                field: currency_code
+      - name: rate_per_unit
+        data_tests:
+          - not_null
