@@ -1,0 +1,21 @@
+version: 2
+
+models:
+  - name: dim_currency
+    description: "One row per currency: name, type, first and last seen dates, and whether CBAR still publishes it."
+    columns:
+      - name: currency_code
+        data_tests:
+          - not_null
+          - unique
+
+      - name: currency_type
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['metal', 'currency']
+
+      - name: is_active
+        data_tests:
+          - not_null
