@@ -56,3 +56,24 @@ models:
       - name: rate_per_unit
         data_tests:
           - not_null
+  
+  - name: fact_exchange_rate_daily
+    description: "One row per currency per calendar day. On days without a CBAR publication, the last published rate is carried forward and flagged."
+    columns:
+      - name: date_day
+        data_tests:
+          - not_null
+      - name: rate_per_unit
+        data_tests:
+          - not_null
+      - name: is_carried_forward
+        data_tests:
+          - not_null
+      - name: currency_code
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_currency')
+                field: currency_code
+
