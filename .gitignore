@@ -225,3 +225,5 @@ temp.py
 dbt/target/
 dbt/logs/
 dbt/dbt_packages/
+
+data/
