@@ -65,3 +65,18 @@ def load_raw(df):
 
     logger.info("Upserted %d rows into %s (table total: %d)", len(df), TABLE, total)
     return total
+
+def get_last_loaded_date():
+    if not os.path.exists(DB_PATH):
+        return None
+
+    con = duckdb.connect(DB_PATH, read_only=True)
+
+    try:
+        return con.execute(
+            f"SELECT max(strptime(rate_date, '%d.%m.%Y'))::DATE FROM {TABLE}"
+        ).fetchone()[0]
+    except duckdb.CatalogException:
+        return None
+    finally:
+        con.close()
