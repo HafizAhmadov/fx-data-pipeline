@@ -54,4 +54,4 @@ def backfill(start_date, end_date):
 # generate_dates(date(2023,1,1), date.today())
 
 if __name__ == "__main__":
-  backfill(date(2023, 1, 1), date.today())
+  backfill(date(2026, 11, 7), date.today())
