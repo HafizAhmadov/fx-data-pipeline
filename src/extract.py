@@ -19,7 +19,7 @@ def fetch_xml(date_str):
     for attempt in range(1, MAX_ATTEMPTS + 1):
         try:
             response = requests.get(url=url, timeout=TIMEOUT)
-        except (requests.exceptions.timeout, requests.exceptions.ConnectionError) as e:
+        except (requests.exceptions.Timeout, requests.exceptions.ConnectionError) as e:
             error = f"Attempt {attempt} failed: {e}"
         else:
             if response.ok:
