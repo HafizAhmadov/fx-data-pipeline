@@ -1,0 +1,13 @@
+name: Check CBAR access
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Try to reach CBAR
+        run: |
+          curl -s -o /dev/null -w "HTTP %{http_code}\n" --max-time 20 \
+            https://cbar.az/currencies/06.11.2026.xml
