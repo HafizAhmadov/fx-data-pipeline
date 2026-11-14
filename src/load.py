@@ -5,7 +5,8 @@ import duckdb
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = "data/fx.duckdb"
+DB_PATH = os.environ.get("FX_DB_PATH", "data/fx.duckdb")
+IS_MOTHERDUCK = DB_PATH.startswith("md:")
 TABLE = "raw.cbar_rates"
 
 COLUMNS = [
@@ -43,6 +44,7 @@ UPSERT_SQL = f"""
 
 
 def load_raw(df):
+    
     # 1. Check the input before touching the database
     if df.empty:
         raise ValueError("No rows to load. The parsed DataFrame is empty.")
@@ -52,7 +54,8 @@ def load_raw(df):
         raise ValueError(f"DataFrame is missing columns: {missing}")
 
     # 2. Load
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
+    if not IS_MOTHERDUCK:
+        os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)    
     con = duckdb.connect(DB_PATH)
     try:
         con.execute("CREATE SCHEMA IF NOT EXISTS raw")
@@ -67,10 +70,10 @@ def load_raw(df):
     return total
 
 def get_last_loaded_date():
-    if not os.path.exists(DB_PATH):
+    if not IS_MOTHERDUCK and not os.path.exists(DB_PATH):
         return None
 
-    con = duckdb.connect(DB_PATH, read_only=True)
+    con = duckdb.connect(DB_PATH, read_only=not IS_MOTHERDUCK)
 
     try:
         return con.execute(
