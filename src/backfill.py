@@ -5,7 +5,7 @@ from datetime import date
 
 import pandas as pd
 
-from load import get_last_loaded_date
+from load import DB_PATH, get_last_loaded_date
 from main import run
 
 logger = logging.getLogger(__name__)
@@ -61,7 +61,7 @@ if __name__ == "__main__":
   parser.add_argument("--start", type=date.fromisoformat, help="Start date, YYYY-MM-DD")
   parser.add_argument("--end", type=date.fromisoformat, help="End date, YYYY-MM-DD")
   args = parser.parse_args()
-
+  logger.info("Database: %s", DB_PATH)
   end_date = args.end or date.today()
 
   if args.start:

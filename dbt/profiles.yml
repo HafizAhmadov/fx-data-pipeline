@@ -5,3 +5,7 @@ fx_pipeline:
       type: duckdb
       path: ../data/fx.duckdb
       threads: 1
+    prod:
+      type: duckdb
+      path: "md:fx_pipeline"
+      threads: 1
