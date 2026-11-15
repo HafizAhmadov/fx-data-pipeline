@@ -5,12 +5,7 @@ sources:
     schema: raw
     tables:
       - name: cbar_rates
-
-  - name: raw
-    schema: raw
-    tables:
-      - name: cbar_rates
-        config: 
+        config:
           loaded_at_field: loaded_at
           freshness:
             warn_after: {count: 3, period: day}
