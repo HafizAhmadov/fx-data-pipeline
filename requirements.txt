@@ -1,3 +1,4 @@
 requests
-duckdb==1.5.6
 pandas
+duckdb==1.5.6
+dbt-duckdb==1.11.1
