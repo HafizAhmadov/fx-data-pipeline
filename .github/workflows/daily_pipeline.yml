@@ -38,9 +38,6 @@ jobs:
         working-directory: dbt
         run: dbt build --target prod
 
-      - name: Temporary failure test
-        run: exit 1
-
       - name: Notify Telegram on failure
         if: failure()
         env:
