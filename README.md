@@ -1,6 +1,6 @@
 # FX Data Pipeline
 
-An end-to-end data pipeline that collects official daily exchange rates from the **Central Bank of Azerbaijan (CBAR)**, loads them into a cloud data warehouse, models them into a tested star schema with dbt, and runs automatically every weekday on GitHub Actions.
+An end-to-end data pipeline that collects official daily exchange rates from the **Central Bank of Azerbaijan (CBAR)**, loads them into a cloud data warehouse, models them into a tested star schema with dbt, and runs automatically every weekday on GitHub Actions. The pipeline is also containerized with Docker and can be orchestrated with Apache Airflow.
 
 ## Architecture
 
@@ -15,7 +15,7 @@ flowchart LR
     E --> H[fact_exchange_rate_daily]
     F --> H
     G --> H
-    I[GitHub Actions<br/>weekdays 06:00 UTC] -.->|runs| B
+    I[GitHub Actions<br/>weekdays 06:17 UTC] -.->|runs| B
     I -.->|runs| D
     I -.->|on failure| J[Telegram alert]
 ```
@@ -35,7 +35,8 @@ flowchart LR
 | Ingestion | Python, requests, pandas, `xml.etree` |
 | Storage | DuckDB (local development), MotherDuck (cloud production) |
 | Transformation & testing | dbt Core with `dbt-duckdb` |
-| Orchestration | GitHub Actions (cron schedule + manual trigger) |
+| Orchestration | GitHub Actions (production schedule), Apache Airflow 3 (local DAG) |
+| Containerization | Docker |
 | Alerting | Telegram Bot API |
 | Version control | Git, GitHub |
 
@@ -61,7 +62,7 @@ flowchart LR
 
 ## Reliability features
 
-- **Idempotent loads** – a primary key on `(rate_date, currency_code)` plus an upsert means any day can be re-run safely, with no duplicates.
+- **Idempotent loads** – a primary key on `(rate_date, currency_code)` plus an upsert means any day can be re-run safely, with no duplicates. This is what makes retries, backfills and overlapping runs safe.
 - **Incremental mode** – each run checks the newest date already loaded and continues from there, re-loading the last day as a lookback window to catch late corrections.
 - **Retries with exponential backoff** – network errors and `429`/`5xx` responses are retried; other `4xx` errors fail immediately.
 - **Pre-load validation** – a suspicious file is rejected before it reaches the database.
@@ -69,7 +70,7 @@ flowchart LR
 - **Data tests** – `not_null`, `unique`, `accepted_values` and `relationships` tests, plus custom tests for one row per currency per day, positive rates and stale carried-forward rates.
 - **Source freshness** – warns when raw data is more than 3 days old and fails after 5 days.
 - **Failure alerts** – any failed scheduled run sends a Telegram message with a link to the logs.
-- **Pinned dependencies** – exact versions of DuckDB and dbt-duckdb so every machine behaves the same.
+- **Pinned dependencies** – exact versions of DuckDB and dbt-duckdb, and a pinned runner OS, so every machine behaves the same.
 
 ## Project structure
 
@@ -88,8 +89,13 @@ fx-data-pipeline/
 │   │   ├── staging/      # source definition + stg_cbar_rates
 │   │   └── marts/        # star schema
 │   └── tests/            # custom singular tests
+├── airflow/
+│   └── dags/
+│       └── fx_pipeline_dags.py   # Airflow DAG: extract_load → source_freshness → dbt_build
 ├── .github/workflows/
 │   └── daily_pipeline.yml
+├── Dockerfile
+├── .dockerignore
 └── requirements.txt
 ```
 
@@ -115,6 +121,53 @@ dbt build
 
 By default everything runs against a local DuckDB file (`data/fx.duckdb`).
 
+## Running with Docker
+
+The image packages Python, the pinned dependencies, the ingestion code and the dbt project. Its default command runs the incremental load and then `dbt build`.
+
+```bash
+# Build the image
+docker build -t fx-pipeline .
+
+# Run against the local database (the data folder is mounted as a volume)
+docker run --rm -v "$(pwd)/data:/app/data" fx-pipeline
+
+# Run the same image against MotherDuck (production)
+docker run --rm \
+  -e FX_DB_PATH=md:fx_pipeline \
+  -e DBT_TARGET=prod \
+  -e motherduck_token \
+  fx-pipeline
+```
+
+- **Volumes** keep the data outside the container, so it survives after the container is removed.
+- **Environment variables** choose the database and dbt target at run time; the token is passed in from the host and never stored in the image.
+- **Layer caching:** dependencies are installed before the code is copied, so code changes rebuild in seconds.
+
+## Orchestration with Airflow (local)
+
+`airflow/dags/fx_pipeline_dags.py` defines the same pipeline as an Airflow DAG with three dependent tasks:
+
+```
+extract_load  >>  source_freshness  >>  dbt_build
+```
+
+- Weekday schedule (`17 6 * * 1-5`, UTC), `catchup=False`
+- Two retries per task with a 5-minute delay
+- `max_active_runs=1`, so two runs never write to the same DuckDB file at once
+- Tasks call the project's own virtual environment, keeping Airflow's dependencies separate from the pipeline's
+
+To try it locally, install Airflow 3 in a **separate** virtual environment (using the official constraints file), then:
+
+```bash
+export AIRFLOW_HOME=~/airflow-lab/airflow_home
+export AIRFLOW__CORE__LOAD_EXAMPLES=False
+export AIRFLOW__CORE__DAGS_FOLDER=/path/to/fx-data-pipeline/airflow/dags
+airflow standalone
+```
+
+Then open http://localhost:8080, unpause `fx_pipeline` and trigger it. The paths in the DAG point to a local checkout; in production the tasks would typically run the Docker image instead.
+
 ## Environments
 
 The same code runs locally and in production; only configuration changes.
@@ -128,13 +181,15 @@ The same code runs locally and in production; only configuration changes.
 
 ## Scheduled runs
 
-`.github/workflows/daily_pipeline.yml` runs every weekday at 06:00 UTC (10:00 Baku time) and can also be started manually. Each run:
+`.github/workflows/daily_pipeline.yml` runs every weekday at 06:17 UTC (10:17 Baku time) and can also be started manually. Each run:
 
 1. installs pinned dependencies,
 2. loads new CBAR data into MotherDuck,
 3. checks source freshness,
 4. builds and tests all dbt models,
 5. sends a Telegram alert if any step fails.
+
+The schedule uses an odd minute because GitHub's scheduled events are best-effort: runs at the top of the hour are the most likely to be delayed or skipped.
 
 Required repository secrets: `MOTHERDUCK_TOKEN`, `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID`.
 
@@ -144,4 +199,3 @@ Official exchange rates published by the Central Bank of the Republic of Azerbai
 `https://cbar.az/currencies/DD.MM.YYYY.xml`
 
 Each file contains bank metals and foreign currencies. On weekends and holidays CBAR returns the file of the last working day, which the primary key and upsert absorb automatically.
-
